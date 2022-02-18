@@ -29,8 +29,8 @@
   * 消費電力が小さいしサイズも丁度いい。
   * 注：PWMの仕様が違うのでArudinoとは互換性ありません。
 - PCF8523搭載 RTCモジュール
- * https://www.switch-science.com/catalog/3037/
- * 何でも良いかと。
+  * https://www.switch-science.com/catalog/3037/
+  * どのRTCでも良いかと。
 - LC型ハンドタイププラスチックケース LC135-F4-D
   * タカチのケース。電池ボックス付き。土台。
   * https://eleshop.jp/shop/g/gH1P31L/
