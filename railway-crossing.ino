@@ -38,8 +38,8 @@ const int speed_Servo = 60;       //遮断器が降りる速度（Servoのpositi
 const int speed_Siren = 310;      //警報灯の明滅と警報音の間隔 msec
 
 // Siren Setting //
-const int vol = 10;        //警報灯の音量
-const int delayTime = 200; //警報灯の音色調整
+const int vol = 10;        //警報音の音量
+const int delayTime = 200; //警報音の音色調整
 
 // Initialize //
 unsigned long lastMsec; 
