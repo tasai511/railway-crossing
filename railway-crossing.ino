@@ -39,7 +39,7 @@ const int speed_Siren = 310;      //警報灯の明滅と警報音の間隔 msec
 
 // Siren Setting //
 const int vol = 10;        //警報灯の音量
-const int delayTime = 200; //警報灯の音程調整
+const int delayTime = 200; //警報灯の音色調整
 
 // Initialize //
 unsigned long lastMsec; 
