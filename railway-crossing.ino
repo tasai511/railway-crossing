@@ -25,12 +25,14 @@ const int marginSec_In   = 150;   //時刻表と通過時刻との差 sec
 const int marginSec_Out = 60;     //時刻表と通過時刻との差 sec
 
 // 時刻表はあくまで「駅Aを発車する時刻」なので、そこから踏切を通過する時刻を逆算する必要があります。
-// ・ 駅Aに到着しにいく（In）電車は「踏切通過 → 駅までの距離を移動 → 停車 → 乗客乗り降り → 発車」までの時間を考慮する必要があります。
-// ・ 駅Aから発車してくる（Out）電車が「発車 → 駅からの距離を移動 → 踏切通過」までの時間を考慮する必要があります。
-// したがって、通常はOutよりもInのほうが長くなるはずです。
+// ・ 駅Aに到着しにいく（In）電車は「踏切通過 → 駅までの距離を移動 → 停車 → 乗客乗り降り → 発車」までの時間を"marginSec_In"に設定。
+// ・ 駅Aから発車してくる（Out）電車が「発車 → 駅からの距離を移動 → 踏切通過」までの時間を"marginSec_Out"に設定。
 
-const long duration_In = 60000;   //遮断器が降りてる時間 msec
-const long duration_Out = 90000;  //遮断器が降りてる時間 msec
+const long duration_In = 60000;   //下り（In）電車通過時に遮断器が降りている時間 msec
+const long duration_Out = 90000;  //上り（Out）電車通過時に遮断器が降りている時間 msec
+
+// 駅Aに向かう電車（In）よりも駅Aから出てくる電車（Out）のほうが待ち時間が長い傾向がありました。
+
 const long delay_Servo = 10000;   //警報器が鳴ってから遮断器が降り始めるまでの時間 msec
 const int speed_Servo = 60;       //遮断器が降りる速度（Servoのpositionを＋1する間隔）msec
 const int speed_Siren = 310;      //警報灯の明滅と警報音の間隔 msec
