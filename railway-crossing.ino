@@ -4,32 +4,45 @@
 Servo myservo;
 RTC_PCF8523 rtc;
 
+// このサンプルでは、西武新宿線の駅Aと新宿駅の間（つまり上り方向）にある踏切をエミュレートしています。
+// したがって、
+// ・ 駅Aに到着しにいく（In）電車が下り電車。
+// ・ 駅Aから発車してくる（Out）電車が上り電車。
+// となり、変数名にIn/Outを使うことで、それがどちらの電車に対するパラメーターかを示しています。
+// エミュレートしたい踏切が下り方向にある場合には、Inが上り、Outが下りになるのでご注意ください。
+// 設定済みの値はあくまでサンプルで実際のデータとは異なりますし、対象の踏切によって異なると思われます。
+
 // Pin Setting //
 const int speakerPin = 2;
 const int servoPin = 3;
-const int ledPin_1 = 7;
-const int ledPin_2 = 10;
-const int ledPin_In = 9;
-const int ledPin_Out = 8;
+const int ledPin_1 = 7;   //警報灯
+const int ledPin_2 = 10;  //警報灯
+const int ledPin_In = 9;  //方向指示器（下り方向）
+const int ledPin_Out = 8; //方向指示器（上り方向）
 
 // Timing Setting //
-const int marginSec_In   = 150;
-const int marginSec_Out = 60;
-const long duration_In = 60000;
-const long duration_Out = 90000;
-const long delay_Servo = 10000;
-const int speed_Servo = 60;
-const int speed_Siren = 310;
+const int marginSec_In   = 150;   //時刻表と通過時刻との差 sec
+const int marginSec_Out = 60;     //時刻表と通過時刻との差 sec
+
+// 時刻表はあくまで「駅Aを発車する時刻」なので、そこから踏切を通過する時刻を逆算する必要があります。
+// ・ 駅Aに到着しにいく（In）電車は「踏切通過 → 駅までの距離を移動 → 停車 → 乗客乗り降り → 発車」までの時間を考慮する必要があります。
+// ・ 駅Aから発車してくる（Out）電車が「発車 → 駅からの距離を移動 → 踏切通過」までの時間を考慮する必要があります。
+// したがって、通常はOutよりもInのほうが長くなるはずです。
+
+const long duration_In = 60000;   //遮断器が降りてる時間 msec
+const long duration_Out = 90000;  //遮断器が降りてる時間 msec
+const long delay_Servo = 10000;   //警報器が鳴ってから遮断器が降り始めるまでの時間 msec
+const int speed_Servo = 60;       //遮断器が降りる速度（Servoのpositionを＋1する間隔）msec
+const int speed_Siren = 310;      //警報灯の明滅と警報音の間隔 msec
 
 // Siren Setting //
-const int vol = 10;
-const int delayTime = 200;
+const int vol = 10;        //警報灯の音量
+const int delayTime = 200; //警報灯の音程調整
 
 // Initialize //
 unsigned long lastMsec; 
 unsigned long lastMsec_Servo;
 unsigned long lastMsec_Siren;
-unsigned long lastMsec_debug; //debug
 unsigned long delay_Start;
 int last_now_In;
 int last_now_Out;
@@ -45,7 +58,7 @@ int ledState_In = LOW;
 int ledState_Out = LOW;
 
 // Time Table //
-char* Weekday_Table_In[]={
+char* Weekday_Table_In[]={  //平日の下り電車（In）時刻表
   "4:59",
   "5:16",  "5:28", "5:36", "5:46", "5:56",
   "6:2", "6:14", "6:20", "6:23", "6:26", "6:30", "6:34", "6:37", "6:40", "6:46", "6:48", "6:52", "6:57",
@@ -68,7 +81,7 @@ char* Weekday_Table_In[]={
   "23:9", "23:16", "23:25"
 }; //170
 
-char* Weekday_Table_Out[]={
+char* Weekday_Table_Out[]={  //平日の上り電車（Out）時刻表
   "5:18",  "5:47",
   "6:9", "6:23", "6:34", "6:42", "6:53",
   "7:0", "7:11", "7:17", "7:21", "7:31", "7:36", "7:38", "7:42", "7:51",
@@ -91,7 +104,7 @@ char* Weekday_Table_Out[]={
   "0:3", "0:6", "0:15", "0:23", "0:28", "0:39", "0:53" 
 }; //155
 
-char* Weekend_Table_In[]={
+char* Weekend_Table_In[]={  //土日の下り電車（In）時刻表
   "4:59",
   "5:16",  "5:28", "5:36", "5:46", "5:56",
   "6:7", "6:16", "6:24", "6:35", "6:38", "6:45", "6:54", "6:59",
@@ -114,7 +127,7 @@ char* Weekend_Table_In[]={
   "23:9", "23:25"
 }; //149
 
-char* Weekend_Table_Out[]={
+char* Weekend_Table_Out[]={   //土日の上り電車（Out）時刻表
   "5:18",  "5:47",
   "6:5", "6:26", "6:38", "6:54",
   "7:6", "7:16", "7:26", "7:37", "7:46", "7:53",
@@ -205,10 +218,9 @@ void siren(){
 
 // Main //
 void setup(){
-  Serial.begin(57600); //Debug
   rtc.begin();
-  myservo.attach(3);
-  for (int i = 106; i >= 10; i -= 1) {
+  myservo.attach(servoPin);
+  for (int i = 106; i >= 10; i -= 1) {  //106＝水平、10＝垂直。Servoによって個体差あるかも？
     myservo.write(i);
     delay(15);
   }
@@ -229,54 +241,45 @@ void loop(){
   if (now.unixtime() != lastTime){
     lastTime = now.unixtime();
     if ((now.dayOfTheWeek() != 0) && (now.dayOfTheWeek() != 6)){
-      for(int i=0; i<=169; i++){
+      for(int i=0; i<=169; i++){    //170＝平日下り（In）電車の本数。配列の要素数を取得する方法がわからず手打ち（恥）
         if (currentTime_In == Weekday_Table_In[i]){
           if (now_In.minute() != last_now_In){
             last_now_In = now_In.minute();
             total_duration = duration_In + 1000;
             arrow_duration_In = duration_In;
-            Serial.print(Weekday_Table_In[i]);
-            Serial.println("// In Start");
           }
         }
       }
-      for(int i=0; i<=154; i++){
+      for(int i=0; i<=154; i++){    //155＝平日上り（Out）電車の本数。配列の要素数を取得する方法がわからず手打ち（恥）
         if (currentTime_Out == Weekday_Table_Out[i]){
           if (now_Out.minute() != last_now_Out){
             last_now_Out = now_Out.minute();
             total_duration = duration_Out + 1000;
             arrow_duration_Out = duration_Out;
-            Serial.print(Weekday_Table_Out[i]);
-            Serial.println("// Out Start");
           }
         }
       }
     } else {
-      for(int i=0; i<=148; i++){
+      for(int i=0; i<=148; i++){    //149＝土日下り（In）電車の本数。配列の要素数を取得する方法がわからず手打ち（恥）
         if (currentTime_In == Weekend_Table_In[i]){
           if (now_In.minute() != last_now_In){
             last_now_In = now_In.minute();
             total_duration = duration_In + 1000;
             arrow_duration_In = duration_In;
-            Serial.print(Weekend_Table_In[i]);
-            Serial.println("// In Start");
           }
         }
       }
-      for(int i=0; i<=149; i++){
+      for(int i=0; i<=149; i++){    //150＝土日上り（Out）電車の本数。配列の要素数を取得する方法がわからず手打ち（恥）
         if (currentTime_Out == Weekend_Table_Out[i]){
           if (now_Out.minute() != last_now_Out){
             last_now_Out = now_Out.minute();
             total_duration = duration_Out + 1000;
             arrow_duration_Out = duration_Out;
-            Serial.print(Weekend_Table_Out[i]);
-            Serial.println("// Out Start");
           }
         }
       }
     }
   }
-
 
   unsigned long currentMsec = millis();
   
@@ -289,18 +292,6 @@ void loop(){
   if (arrow_duration_Out > 0){
     arrow_duration_Out = arrow_duration_Out - (currentMsec - lastMsec);
   } else { arrow_duration_Out = 0; }
-
-  // debug
-  if (currentMsec - lastMsec_debug >= 1000){
-    lastMsec_debug = currentMsec;
-    Serial.print("Total=");
-    Serial.print(total_duration);
-    Serial.print("/In=");
-    Serial.print(arrow_duration_In);
-    Serial.print("/Out=");
-    Serial.println(arrow_duration_Out);
-  }
-  //
 
   lastMsec = currentMsec;
   
