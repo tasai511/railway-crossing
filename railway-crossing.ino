@@ -4,12 +4,12 @@
 Servo myservo;
 RTC_PCF8523 rtc;
 
-// このサンプルでは、西武新宿線の駅Aと新宿駅の間（つまり上り方向）にある踏切をエミュレートしています。
+// このサンプルでは、西武新宿線の駅Aと新宿駅の間（つまり上り方向）にある踏切をクローンしています。
 // したがって、
 // ・ 駅Aに到着しにいく（In）電車が下り電車。
 // ・ 駅Aから発車してくる（Out）電車が上り電車。
 // となり、変数名にIn/Outを使うことで、それがどちらの電車に対するパラメーターかを示しています。
-// エミュレートしたい踏切が下り方向にある場合には、Inが上り、Outが下りになるのでご注意ください。
+// クローンしたい踏切が下り方向にある場合には、Inが上り、Outが下りになるのでご注意ください。
 // 設定済みの値はあくまでサンプルで実際のデータとは異なりますし、対象の踏切によって異なると思われます。
 
 // Pin Setting //
@@ -17,21 +17,21 @@ const int speakerPin = 2;
 const int servoPin = 3;
 const int ledPin_1 = 7;   //警報灯
 const int ledPin_2 = 10;  //警報灯
-const int ledPin_In = 9;  //方向指示器（下り方向）
-const int ledPin_Out = 8; //方向指示器（上り方向）
+const int ledPin_In = 9;  //方向指示器（右）
+const int ledPin_Out = 8; //方向指示器（左）
 
 // Timing Setting //
-const int marginSec_In   = 150;   //時刻表と通過時刻との差 sec
-const int marginSec_Out = 60;     //時刻表と通過時刻との差 sec
+const int marginSec_In   = 150;   //時刻表と通過時刻との差（In） sec
+const int marginSec_Out = 60;     //時刻表と通過時刻との差（Out） sec
 
 // 時刻表はあくまで「駅Aを発車する時刻」なので、そこから踏切を通過する時刻を逆算する必要があります。
 // ・ 駅Aに到着しにいく（In）電車は「踏切通過 → 駅までの距離を移動 → 停車 → 乗客乗り降り → 発車」までの時間を"marginSec_In"に設定。
 // ・ 駅Aから発車してくる（Out）電車が「発車 → 駅からの距離を移動 → 踏切通過」までの時間を"marginSec_Out"に設定。
 
-const long duration_In = 60000;   //下り（In）電車通過時に遮断器が降りている時間 msec
-const long duration_Out = 90000;  //上り（Out）電車通過時に遮断器が降りている時間 msec
+const long duration_In = 60000;   //下り（In）電車の通過時に遮断器が降りている時間 msec
+const long duration_Out = 90000;  //上り（Out）電車の通過時に遮断器が降りている時間 msec
 
-// 駅Aに向かう電車（In）よりも駅Aから出てくる電車（Out）のほうが待ち時間が長い傾向がありました。
+// 駅Aに向かう電車（In）よりも駅Aから出てくる電車（Out）のほうが待ち時間が長い傾向があります。
 
 const long delay_Servo = 10000;   //警報器が鳴ってから遮断器が降り始めるまでの時間 msec
 const int speed_Servo = 60;       //遮断器が降りる速度（Servoのpositionを＋1する間隔）msec
